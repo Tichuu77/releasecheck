@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const express  = require('express');
 const cors     = require('cors');
+const path     = require('path'); // 👈 ADD THIS
 const { initDb } = require('./db');
 const releasesRouter = require('./routes/releases');
 
@@ -13,23 +14,28 @@ const PORT = process.env.PORT || 4000;
 app.use(cors({
   origin: process.env.FRONTEND_URL || '*',
 }));
+
 app.use(express.json());
 
-/* ── Routes ─────────────────────────────────────────────────────── */
+/* ── API Routes ─────────────────────────────────────────────────── */
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/releases', releasesRouter);
 
-/* ── 404 handler ────────────────────────────────────────────────── */
+/* ── Serve Frontend (ADD THIS BLOCK) ────────────────────────────── */
 
-app.use((_req, res) => res.status(404).json({ error: 'Not found' }));
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 /* ── Start ──────────────────────────────────────────────────────── */
 
 if (require.main === module) {
   initDb()
     .then(() => {
-      app.listen(PORT, () => console.log(`API listening on http://localhost:${PORT}`));
+      app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
     })
     .catch((err) => {
       console.error('Failed to initialise database', err);
@@ -37,4 +43,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = app; // exported for tests
+module.exports = app;
